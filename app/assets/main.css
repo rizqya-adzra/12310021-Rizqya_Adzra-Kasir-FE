@@ -1,0 +1,12 @@
+@import "tailwindcss";
+
+@theme {
+    --font-sans: 'Quicksand', ui-sans-serif, 'Space Mono';
+
+    --color-primary: #FDDA0D;
+    --color-secondary: #00F3FF;
+    --color-tertiary: #060606;
+    --color-neutral: #F6F6F6;
+    --color-gray: #6E6E6E;
+    --color-gold: #6B5A24;
+}
