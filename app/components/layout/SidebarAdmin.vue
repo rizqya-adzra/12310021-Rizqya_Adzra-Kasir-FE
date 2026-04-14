@@ -63,6 +63,13 @@ onMounted(async () => {
         </div>
       </div>
 
+      <NuxtLink to="/admin/transaction/list-page" #default="{ isActive }">
+        <NavIcon 
+          label="Transaksi" 
+          name="i-lucide-file-text" 
+          :is-active="isActive" 
+        />
+      </NuxtLink>
       <NuxtLink to="/admin/user/list-page" #default="{ isActive }">
         <NavIcon 
           label="User" 

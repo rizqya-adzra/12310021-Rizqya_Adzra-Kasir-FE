@@ -1,13 +1,14 @@
-<template>
-  <div>
-    
-  </div>
-</template>
+<script setup lang="ts">
+definePageMeta({
+  middleware: 'auth',
+  layout: 'cashier'
+})
 
-<script lang="ts" setup>
-
+useHead({
+  title: 'Dashboard Kasir | Cashier App'
+})
 </script>
 
-<style>
-
-</style>
+<template>
+  <p class="font-bold text-4xl text-center">Isi nya apa ya</p>
+</template>

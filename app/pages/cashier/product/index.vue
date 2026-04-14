@@ -6,17 +6,15 @@ import defaultImage from '~/assets/images/default_image.jpg'
 
 definePageMeta({
     middleware: 'auth',
-    layout: 'admin'
+    layout: 'cashier'
 })
 
-const route = useRoute()
 const router = useRouter()
 
 const {
     activeSorts, 
     handleSort,
     searchParams,       
-    categoryParams,
     visibilityParams,  
     maxPriceParams,
     minPriceParams,
@@ -31,17 +29,15 @@ const tableColumns = [
     { key: 'no', label: '#', class: 'w-16 font-bold text-center' },
     { key: 'name', label: 'Nama Produk', class: 'w-[300px]' },
     { key: 'category', label: 'Kategori' },
-    { key: 'visibility', label: 'Status' },
     { key: 'price', label: 'Harga' },
-    { key: 'stock', label: 'Stok', class: 'text-center' },
-    { key: 'min_stock', label: 'Min Stok', class: 'text-center' },
+    { key: 'stock', label: 'Stok' },
     { key: 'actions', label: '', class: 'w-40 text-right' } 
 ]
 
-const { fetchProductNew, addStockToProduct, exportProductsExcel } = useProduct()
+const { fetchProducts, exportProductsExcel } = useProduct()
 const { formatRupiah } = usePriceFormatter()
 
-const { data: response, pending, refresh } = await fetchProductNew(apiQuery)
+const { data: response, pending, refresh } = await fetchProducts(apiQuery)
 
 const mappedProducts = computed(() => {
     if (!response.value?.data) return []
@@ -56,7 +52,6 @@ const mappedProducts = computed(() => {
         stock: product.stock,
         min_stock: product.minimal_stock,
         is_low_stock: product.is_low_stock,
-        status: product.visibility
     }))
 })
 
@@ -73,7 +68,7 @@ watch(
 )
 
 const goToDetail = (id: string) => {
-    router.push(`/admin/product/${id}`)
+    router.push(`/cashier/product/${id}`)
 }
 
 const isExporting = ref(false)
@@ -100,28 +95,6 @@ const executeExport = async () => {
   } finally {
     isExporting.value = false
   }
-}
-
-const handleUpdateStock = async (id: string, name: string) => {
-    const amountStr = window.prompt(`Berapa jumlah stok yang ingin ditambahkan untuk produk ${name}?\n(Masukkan angka minimal 1)`);
-    
-    if (!amountStr) return; 
-
-    const amount = parseInt(amountStr);
-    if (isNaN(amount) || amount < 1) {
-        alert("Jumlah tidak valid! Harap masukkan angka yang valid dan lebih dari 0.");
-        return;
-    }
-
-    try {
-        await addStockToProduct(id, { amount: amount });
-        
-        await refresh();
-        
-    } catch (error) {
-        console.error("Gagal update stok:", error);
-        alert("Terjadi kesalahan saat menambahkan stok. Silakan coba lagi.");
-    }
 }
 
 useHead({
@@ -152,9 +125,6 @@ useHead({
         </div>
         <div class="flex items-center justify-between">
             <p class="font-bold text-3xl">Manajemen Produk</p>
-            <NuxtLink to="/admin/product/create">
-                <UiButton label="Tambah Produk" variant="primary" icon-name="i-lucide-plus" color="yellow" />
-            </NuxtLink>
         </div>
         <UiTable 
             title="Semua List Produk"
@@ -163,7 +133,7 @@ useHead({
             :total-items="response?.count || 0" 
             :displayed-items="mappedProducts.length"
             :loading="pending"
-            @sort="handleSort"       
+            @sort="handleSort"
         >
             <template #top-actions>
                 <UiDropdownDefault class="ml-auto" v-model="limitParams" />
@@ -196,10 +166,6 @@ useHead({
     
             <template #cell-category="{ row }">
                 <UiLabel :text="row.category" />
-            </template>
-    
-            <template #cell-visibility="{ row }">
-                <UiLabel :text="row.status" />
             </template>
     
             <template #header-price>
@@ -244,17 +210,7 @@ useHead({
             </template>
             
             <template #cell-actions="{ row }">
-                <div class="flex items-center justify-center gap-3">
-                    <UiButton @click="goToDetail(row.id)" variant="chip" color="ghost" icon-name="i-lucide-eye" />
-                    <UiButton 
-                        @click.stop="handleUpdateStock(row.id, row.name)" 
-                        label="Tambah Stok" 
-                        variant="outline" 
-                        color="transparent" 
-                        :showIcon="false" 
-                        class="rounded-full px-5 py-2 text-sm" 
-                    />
-                </div>
+                <UiButton @click="goToDetail(row.id)" variant="chip" color="ghost" icon-name="i-lucide-eye" />
             </template>
     
             <template #pagination>

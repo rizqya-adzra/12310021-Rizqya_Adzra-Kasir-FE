@@ -11,8 +11,7 @@ interface ApiResponse<T = any> {
 
 interface User {
   email: string
-  image?: string | null
-  // is_staff: boolean
+  image?: string | undefined
   created_at?: string
   role: UserRole
   [key: string]: any 
@@ -21,17 +20,13 @@ interface User {
 export const useAuthStore = defineStore('auth', {
   state: () => {
     const tokenCookie = useCookie<string | null>('token')
-    // const isStaffCookie = useCookie<string | boolean | null>('is_staff')
     const roleCookie = useCookie<UserRole | null>('role')
 
-    // const isStaffVal = isStaffCookie.value === 'true' || isStaffCookie.value === true || false
 
     return {
       user: null as User | null,
       token: tokenCookie.value || null,
-      // isStaff: isStaffVal,
       role: (roleCookie.value) as UserRole | null,
-      // role: (roleCookie.value || ('admin' ? 'cashier')) as UserRole | null,
       loading: false,
       message: null as string | null,
       error: null as string | null,
@@ -58,20 +53,18 @@ export const useAuthStore = defineStore('auth', {
             const calculatedRole: UserRole = response.data.role || (response.data.is_staff ? 'admin' : 'cashier')
 
             this.token = response.data.token
-            // this.isStaff = response.data.is_staff
             this.role = calculatedRole
             
             this.user = { 
               email: response.data.email,
               image: response.data.image,
-              // is_staff: response.data.is_staff,
               created_at: response.data.created_at,
               role: calculatedRole
             } 
             
             useCookie('token').value = response.data.token
             useCookie('is_staff').value = response.data.is_staff.toString()
-            useCookie('role').value = calculatedRole // Sekarang ini pasti berisi string, bukan undefined
+            useCookie('role').value = calculatedRole 
 
             return response 
         }
@@ -105,7 +98,6 @@ export const useAuthStore = defineStore('auth', {
           const calculatedRole: UserRole = response.data.role || (response.data.is_staff ? 'admin' : 'cashier')
 
           this.token = response.data.token
-          // this.isStaff = response.data.is_staff
           this.role = calculatedRole
 
           this.user = { 
@@ -159,12 +151,10 @@ export const useAuthStore = defineStore('auth', {
           }
 
           if (userData.is_staff !== undefined) {
-            // this.isStaff = userData.is_staff
             useCookie('is_staff').value = userData.is_staff.toString()
           }
 
           const calculatedRole: UserRole = userData.role
-          // const calculatedRole: UserRole = userData.role || (this.isStaff ? 'admin' : 'cashier')
           this.role = calculatedRole
           useCookie('role').value = calculatedRole
           
@@ -195,7 +185,6 @@ export const useAuthStore = defineStore('auth', {
       } finally {
         this.user = null
         this.token = null
-        // this.isStaff = false
         this.role = null
         this.validationErrors = {}
         this.error = null

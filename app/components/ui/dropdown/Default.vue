@@ -8,6 +8,7 @@ const props = defineProps<{
 const emit = defineEmits(['update:modelValue'])
 
 const pageSizes = [
+  { id: 5, label: '5' as const },
   { id: 10, label: '10' as const },
   { id: 20, label: '20' as const },
   { id: 50, label: '50' as const },

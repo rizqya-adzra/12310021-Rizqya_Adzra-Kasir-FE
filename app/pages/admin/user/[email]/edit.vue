@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, reactive, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useUser } from '~/composables/api/useUser' 
 
 definePageMeta({
@@ -8,11 +8,15 @@ definePageMeta({
   layout: 'admin'
 })
 
-const { createUser } = useUser()
+const route = useRoute()
 const router = useRouter()
-const isLoading = ref(false)
+const { fetchUserDetail, updateUser } = useUser()
 const fileInput = ref<HTMLInputElement>()
-const imagePreview = ref<string | null>(null)
+  
+const emailParam = route.params.email as string
+
+const isLoading = ref(false)
+const isFetching = ref(true)
 
 const roleOptions = [
   { label: 'Administrator', value: 'admin' },
@@ -25,18 +29,40 @@ const staffOptions = [
 ]
 
 const formData = reactive({
-    username: '',
-    email: '',
-    password: '',
-    role: 'cashier',
-    is_staff: true,
-    image: null as File | null,
+  username: '',
+  email: '',
+  role: 'cashier',
+  is_staff: true,
+  image: null as File | null,
+  password: '' 
 })
 
 const errors = reactive({
-    username: '',
-    email: '',
-    password: ''
+  username: '',
+  email: '',
+  role: '',
+  password: ''
+})
+
+const currentImageUrl = ref<string | null>(null)
+
+onMounted(async () => {
+  try {
+    const { data: response } = await fetchUserDetail(emailParam)
+    if (response.value?.data) {
+      const u = response.value.data
+      formData.username = u.username
+      formData.email = u.email
+      formData.role = u.role
+      formData.is_staff = u.is_staff
+      
+      currentImageUrl.value = u.image
+    }
+  } catch (err) {
+    console.error('Gagal mengambil data pengguna:', err)
+  } finally {
+    isFetching.value = false
+  }
 })
 
 const handleFileChange = (event: Event) => {
@@ -46,11 +72,11 @@ const handleFileChange = (event: Event) => {
   if (file) {
     formData.image = file
     
-    if (imagePreview.value) {
-      URL.revokeObjectURL(imagePreview.value)
+    if (currentImageUrl.value && currentImageUrl.value.startsWith('blob:')) {
+      URL.revokeObjectURL(currentImageUrl.value)
     }
     
-    imagePreview.value = URL.createObjectURL(file)
+    currentImageUrl.value = URL.createObjectURL(file)
   }
 
   if (fileInput.value) {
@@ -58,43 +84,29 @@ const handleFileChange = (event: Event) => {
   }
 }
 
-const removeImage = () => {
-  formData.image = null
-  if (imagePreview.value) {
-    URL.revokeObjectURL(imagePreview.value)
-    imagePreview.value = null
-  }
-}
-
 const triggerFileInput = () => {
   fileInput.value?.click()
 }
 
+const removeImage = () => {
+  formData.image = null
+  
+  if (currentImageUrl.value && currentImageUrl.value.startsWith('blob:')) {
+    URL.revokeObjectURL(currentImageUrl.value)
+  }
+  
+  currentImageUrl.value = null
+}
+
 const validateForm = () => {
   let isValid = true
-  
-  Object.keys(errors).forEach(key => {
-    errors[key as keyof typeof errors] = ''
-  })
+  Object.keys(errors).forEach(key => { errors[key as keyof typeof errors] = '' })
 
-  if (!formData.username.trim()) {
-    errors.username = 'Nama pengguna wajib diisi'
-    isValid = false
-  }
-
-  if (!formData.email.trim()) {
+  if (!formData.email.trim()) { 
     errors.email = 'Email wajib diisi'
-    isValid = false
+    isValid = false 
   } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
     errors.email = 'Format email tidak valid'
-    isValid = false
-  }
-
-  if (!formData.password.trim()) {
-    errors.password = 'Password wajib diisi'
-    isValid = false
-  } else if (formData.password.length < 6) {
-    errors.password = 'Password minimal 6 karakter'
     isValid = false
   }
 
@@ -106,27 +118,35 @@ const onSubmit = async () => {
 
   try {
     isLoading.value = true
-
     const payload = new FormData()
     
     payload.append('username', formData.username)
     payload.append('email', formData.email)
-    payload.append('password', formData.password)
     payload.append('role', formData.role)
     payload.append('is_staff', formData.is_staff ? 'true' : 'false')
+
+    if (formData.password.trim()) {
+      payload.append('password', formData.password)
+    }
 
     if (formData.image) {
       payload.append('image', formData.image)
     }
 
-    await createUser(payload)
+    await updateUser(emailParam, payload)
     
-    router.push('/admin/user/list-page')
+    router.push(`/admin/user/${formData.email}`)
+
+    await Promise.all([
+      refreshNuxtData('users-list'),
+      refreshNuxtData(`user-detail-${formData.email}`)
+    ])
     
   } catch (error: any) {
-    console.error('Error saat menyimpan pengguna:', error)
     if (error.data?.errors) {
-        Object.assign(errors, error.data.errors)
+      Object.assign(errors, error.data.errors)
+    } else {
+      alert('Terjadi kesalahan saat menyimpan data.')
     }
   } finally {
     isLoading.value = false
@@ -134,12 +154,16 @@ const onSubmit = async () => {
 }
 
 useHead({
-  title: 'Tambah Pengguna | Cashier App',
+  title: 'Edit Pengguna | Cashier App',
 })
 </script>
 
 <template>
-    <div class="grid grid-cols-2 gap-6 mb-12">
+    <div v-if="isFetching" class="flex justify-center py-20">
+      <p class="animate-pulse font-bold text-gray text-xl">Memuat data pengguna...</p>
+    </div>
+
+    <div v-else class="grid grid-cols-2 gap-6 mb-12">
         <div class="col-span-1 space-y-6">
             <div class="bg-white py-14 px-10 rounded-3xl">
                 <div class="flex items-center justify-start gap-4 text-gold mb-6">
@@ -150,7 +174,7 @@ useHead({
                     <UiInput 
                         v-model="formData.username" 
                         label="Nama Pengguna*" 
-                        placeholder="masukan nama pengguna" 
+                        placeholder="contoh@gmail.com" 
                         :error="errors.username" 
                     />
                     <UiInput 
@@ -161,14 +185,12 @@ useHead({
                     />
                     <UiInput 
                         v-model="formData.password" 
-                        label="Password*" 
+                        label="Password Baru" 
                         type="password"
-                        placeholder="Minimal 6 karakter" 
+                        placeholder="-" 
                         :error="errors.password" 
                     />
                     <div>
-                      <p class="font-bold text-gray mb-2">Gambar Produk</p>
-                      
                       <input 
                           ref="fileInput"
                           type="file" 
@@ -183,15 +205,15 @@ useHead({
                           label="Unggah Gambar"
                           icon-name="i-lucide-save"
                           @click="triggerFileInput"
-                          v-if="!imagePreview"
+                          v-if="!currentImageUrl"
                       />
 
-                      <div v-if="imagePreview" class="mt-4 relative inline-block group">
-                          <img :src="imagePreview" alt="Preview" class="max-w-xs max-h-48 object-cover rounded-lg border" />
+                      <div v-if="currentImageUrl" class="relative inline-block group mt-2">
+                          <img :src="currentImageUrl" alt="Preview" class="max-w-xs max-h-48 object-cover rounded-lg border" />
                           
                           <button 
                               @click="removeImage"
-                              class="cursor-pointer absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded-md text-xs font-semibold shadow-sm transition-all"
+                              class="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded-md text-xs font-semibold shadow-sm transition-all"
                           >
                               Hapus
                           </button>
@@ -225,13 +247,13 @@ useHead({
             </div>
         </div>
 
-        <div class="col-span-1">
+        <div class="col-span-1 space-y-6">
             <div class="bg-white py-14 px-10 rounded-3xl sticky top-2">
                 <UiButton 
                     @click="onSubmit"
                     variant="big" 
                     color="yellow" 
-                    :label="isLoading ? 'Menyimpan...' : 'Simpan Pengguna'" 
+                    :label="isLoading ? 'Menyimpan...' : 'Perbarui Pengguna'" 
                     icon-name="i-lucide-save" 
                     :disabled="isLoading"
                 />

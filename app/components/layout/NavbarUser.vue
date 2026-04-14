@@ -6,8 +6,13 @@ const props = defineProps<{
   layout: 'guest' | 'cashier'
 }>()
 
+const auth = useAuthStore()
 const isOpen = ref(false)
 const route = useRoute()
+
+const handleLogout = async () => {
+  await auth.logout() 
+}
 
 watch(() => route.path, () => {
   isOpen.value = false
@@ -31,6 +36,7 @@ watch(() => route.path, () => {
             <NuxtLink to="/cashier/transaction" #default="{ isActive }">
               <NavButton label="Pembelian" :is-active="isActive" />
             </NuxtLink>
+            <NavButton @click="handleLogout"  label="logout" :disabled="auth.loading" />
             <NuxtLink to="/cashier/transaction/create">
               <UiButton label="Tambah Pembelian" iconName="i-lucide-plus" class="w-full justify-center" />
             </NuxtLink>

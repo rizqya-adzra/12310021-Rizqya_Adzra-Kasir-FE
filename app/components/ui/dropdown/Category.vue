@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-// import { useCategory } from '~/composables/api/useCategory'
+import { useCategory } from '~/composables/api/useCategory'
 
 const props = withDefaults(defineProps<{
   modelValue?: string | number
@@ -18,7 +18,7 @@ const props = withDefaults(defineProps<{
 
 const emit = defineEmits(['update:modelValue'])
 
-// const { fetchCategories } = useCategory()
+const { fetchCategories } = useCategory()
 const { data: response, pending } = await fetchCategories()
 
 const categories = computed(() => {
