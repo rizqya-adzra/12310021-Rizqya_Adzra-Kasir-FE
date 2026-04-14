@@ -1,13 +1,7 @@
-<template>
-  <div>
-    
-  </div>
-</template>
-
-<script lang="ts" setup>
+<script setup lang="ts">
 
 </script>
 
-<style>
-
-</style>
+<template>
+  <p class="font-bold text-tertiary text-4xl text-center">Welcome to Cashier IndoJuli!</p>
+</template>

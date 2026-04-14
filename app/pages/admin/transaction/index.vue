@@ -3,7 +3,5 @@
 </script>
 
 <template>
-  <div class="bg-white p-16 rounded-3xl">
-    
-  </div>
+
 </template>
