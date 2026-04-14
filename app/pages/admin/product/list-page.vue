@@ -1,13 +1,14 @@
-<template>
-  <div>
-    
-  </div>
-</template>
+<script setup lang="ts">
+definePageMeta({
+  middleware: 'auth',
+  layout: 'admin'
+})
 
-<script lang="ts" setup>
-
+useHead({
+  title: 'List Product | Cashier App'
+})
 </script>
 
-<style>
+<template>
 
-</style>
+</template>
