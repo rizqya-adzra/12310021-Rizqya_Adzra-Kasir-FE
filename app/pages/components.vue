@@ -1,5 +1,11 @@
 <script setup lang="ts">
+definePageMeta({
+  layout: 'guest'
+})
 
+useHead({
+  title: 'Components | Cashier App'
+})
 </script>
 
 <template>
